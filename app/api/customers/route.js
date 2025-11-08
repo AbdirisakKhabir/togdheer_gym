@@ -10,43 +10,45 @@ export async function GET(request) {
     const search = searchParams.get("search");
     const status = searchParams.get("status");
     const gender = searchParams.get("gender");
-    const type = searchParams.get("type"); // Add this for stats filtering
-    const expireDate = searchParams.get("expireDate"); // For specific date filtering
+    const type = searchParams.get("type");
+    const expireDate = searchParams.get("expireDate");
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "12");
+    const limit = parseInt(searchParams.get("limit") || "200");
     const skip = (page - 1) * limit;
 
     // Build where clause for filtering
     let where = {};
 
-    // Handle stats type filtering (priority over regular filters)
-    if (type) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    // Get current date for filtering
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
+    // DEFAULT: Show only members that have not expired (expireDate >= today)
+    where.expireDate = { gte: today };
+
+    // Handle stats type filtering
+    if (type) {
       const nextWeek = new Date();
       nextWeek.setDate(today.getDate() + 7);
       nextWeek.setHours(23, 59, 59, 999);
 
       switch (type) {
         case "active":
-          where = {
-            isActive: true,
-            expireDate: { gte: today },
-          };
+          // Active members with future expire dates
+          where.isActive = true;
+          where.expireDate = { gte: today };
+          break;
+        case "notExpired":
+          // All members that have not expired (regardless of isActive status)
+          where.expireDate = { gte: today };
           break;
         case "expired":
           where = {
-            OR: [
-              { isActive: false },
-              { expireDate: { lt: today } },
-              { expireDate: null }, // Include customers with no expiration date
-            ],
+            OR: [{ expireDate: { lt: today } }, { expireDate: null }],
           };
           break;
         case "expiring":
           where = {
-            isActive: true,
             expireDate: {
               gte: today,
               lte: nextWeek,
@@ -54,16 +56,18 @@ export async function GET(request) {
           };
           break;
         default:
-          // If unknown type, return all
+          // Default to not expired members
+          where.expireDate = { gte: today };
           break;
       }
     } else {
-      // Regular filtering (when no type parameter)
+      // Regular filtering
       if (search) {
         where.OR = [
           {
             name: {
               contains: search,
+              mode: "insensitive",
             },
           },
           {
@@ -75,27 +79,24 @@ export async function GET(request) {
       }
 
       if (status && status !== "all") {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const nextWeek = new Date();
+        nextWeek.setDate(today.getDate() + 7);
+        nextWeek.setHours(23, 59, 59, 999);
 
         switch (status) {
           case "active":
             where.isActive = true;
             where.expireDate = { gte: today };
             break;
+          case "notExpired":
+            where.expireDate = { gte: today };
+            break;
           case "expired":
-            where.OR = [
-              { isActive: false },
-              { expireDate: { lt: today } },
-              { expireDate: null }, // Include customers with no expiration date
-            ];
+            where = {
+              OR: [{ expireDate: { lt: today } }, { expireDate: null }],
+            };
             break;
           case "expiring":
-            const nextWeek = new Date();
-            nextWeek.setDate(today.getDate() + 7);
-            nextWeek.setHours(23, 59, 59, 999);
-
-            where.isActive = true;
             where.expireDate = {
               gte: today,
               lte: nextWeek,
@@ -111,7 +112,7 @@ export async function GET(request) {
         where.gender = gender;
       }
 
-      // Handle specific expire date filter (for today, tomorrow filters)
+      // Handle specific expire date filter
       if (expireDate) {
         where.expireDate = expireDate;
       }

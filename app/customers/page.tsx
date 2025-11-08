@@ -79,7 +79,7 @@ function useCustomers() {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '150',
+        limit: '200',
         ...filters
       });
 
@@ -728,46 +728,40 @@ export default function CustomersPage() {
 
 
   
-  const stats = useMemo(() => {
-    if (!isClient) return { total: 0, active: 0, expired: 0, expiringThisWeek: 0, male: 0, female: 0 };
-    
-    const total = pagination.totalCount;
-    
-    const active = customers.filter(c => {
-      if (!c.expireDate) return false; // No expiration date means not active
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return c.isActive && new Date(c.expireDate) >= today;
-    }).length;
-    
-    const expired = customers.filter(c => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Include customers who:
-      // 1. Are not active OR
-      // 2. Have expiration date in the past OR  
-      // 3. Don't have any expiration date
-      return !c.isActive || 
-             (c.expireDate && new Date(c.expireDate) < today) || 
-             !c.expireDate;
-    }).length;
-    
-    const expiringThisWeek = customers.filter(c => {
-      if (!c.expireDate) return false;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const nextWeek = new Date();
-      nextWeek.setDate(today.getDate() + 7);
-      nextWeek.setHours(23, 59, 59, 999);
-      return c.isActive && new Date(c.expireDate) >= today && new Date(c.expireDate) <= nextWeek;
-    }).length;
-    
-    const male = customers.filter(c => c.gender === 'male').length;
-    const female = customers.filter(c => c.gender === 'female').length;
+const stats = useMemo(() => {
+  if (!isClient) return { active: 0, notExpired: 0, expired: 0, expiringThisWeek: 0 };
   
-    return { total, active, expired, expiringThisWeek, male, female };
-  }, [customers, isClient, pagination.totalCount]);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 7);
+  nextWeek.setHours(23, 59, 59, 999);
+
+  // Active members: isActive = true AND expireDate >= today
+  const active = customers.filter(c => 
+    c.isActive && c.expireDate && new Date(c.expireDate) >= today
+  ).length;
+  
+  // Not expired members: expireDate >= today (regardless of isActive status)
+  const notExpired = customers.filter(c => 
+    c.expireDate && new Date(c.expireDate) >= today
+  ).length;
+  
+  // Expired members: expireDate < today OR no expireDate
+  const expired = customers.filter(c => 
+    !c.expireDate || new Date(c.expireDate) < today
+  ).length;
+  
+  // Expiring this week: expireDate between today and next week
+  const expiringThisWeek = customers.filter(c => 
+    c.expireDate && 
+    new Date(c.expireDate) >= today && 
+    new Date(c.expireDate) <= nextWeek
+  ).length;
+
+  return { active, notExpired, expired, expiringThisWeek };
+}, [customers, isClient]);
 
 
 
@@ -964,78 +958,74 @@ export default function CustomersPage() {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div 
-            className={`bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
-              activeStat === 'all' ? 'ring-4 ring-blue-300 ring-opacity-50' : ''
-            }`}
-            onClick={() => {
-              setActiveStat(null);
-              const filters = getApiFilters();
-              fetchCustomers(1, filters);
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm font-medium">Total Members</p>
-                <p className="text-3xl font-bold mt-2">{stats.total}</p>
-              </div>
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Users className="w-7 h-7 text-white" />
-              </div>
-            </div>
+  <div 
+    className={`bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
+      activeStat === 'active' ? 'ring-4 ring-green-300 ring-opacity-50' : ''
+    }`}
+    onClick={() => handleStatClick('active')}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-green-100 text-sm font-medium">Active Members</p>
+        <p className="text-3xl font-bold mt-2">{stats.active}</p>
+      </div>
+      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+        <CheckCircle className="w-7 h-7 text-white" />
+      </div>
+    </div>
+  </div>
+  
+  <div 
+    className={`bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
+      activeStat === 'notExpired' ? 'ring-4 ring-blue-300 ring-opacity-50' : ''
+    }`}
+    onClick={() => handleStatClick('notExpired')}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-blue-100 text-sm font-medium">Not Expired</p>
+        <p className="text-3xl font-bold mt-2">{stats.notExpired}</p>
+      </div>
+      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+        <Users className="w-7 h-7 text-white" />
+      </div>
+    </div>
+  </div>
+  
+  <div 
+    className={`bg-gradient-to-r from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
+      activeStat === 'expired' ? 'ring-4 ring-red-300 ring-opacity-50' : ''
+    }`}
+    onClick={() => handleStatClick('expired')}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-red-100 text-sm font-medium">Expired</p>
+        <p className="text-3xl font-bold mt-2">{stats.expired}</p>
+      </div>
+      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+        <Clock className="w-7 h-7 text-white" />
+      </div>
+    </div>
+  </div>
+  
+  <div 
+    className={`bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
+      activeStat === 'expiring' ? 'ring-4 ring-orange-300 ring-opacity-50' : ''
+    }`}
+    onClick={() => handleStatClick('expiring')}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-orange-100 text-sm font-medium">Expiring Soon</p>
+        <p className="text-3xl font-bold mt-2">{stats.expiringThisWeek}</p>
+      </div>
+      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+        <AlertTriangle className="w-7 h-7 text-white" />
+      </div>
+    </div>
+  </div>
           </div>
-          
-          <div 
-            className={`bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
-              activeStat === 'active' ? 'ring-4 ring-green-300 ring-opacity-50' : ''
-            }`}
-            onClick={() => handleStatClick('active')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm font-medium">Active</p>
-                <p className="text-3xl font-bold mt-2">{stats.active}</p>
-              </div>
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <CheckCircle className="w-7 h-7 text-white" />
-              </div>
-            </div>
-          </div>
-          
-          <div 
-            className={`bg-gradient-to-r from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
-              activeStat === 'expired' ? 'ring-4 ring-red-300 ring-opacity-50' : ''
-            }`}
-            onClick={() => handleStatClick('expired')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-100 text-sm font-medium">Expired</p>
-                <p className="text-3xl font-bold mt-2">{stats.expired}</p>
-              </div>
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Clock className="w-7 h-7 text-white" />
-              </div>
-            </div>
-          </div>
-          
-          <div 
-            className={`bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl ${
-              activeStat === 'expiring' ? 'ring-4 ring-orange-300 ring-opacity-50' : ''
-            }`}
-            onClick={() => handleStatClick('expiring')}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-100 text-sm font-medium">Expiring Soon</p>
-                <p className="text-3xl font-bold mt-2">{stats.expiringThisWeek}</p>
-              </div>
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <AlertTriangle className="w-7 h-7 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
 
           {/* Search and Filter Section */}
           <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-lg p-8 mb-8 border border-gray-200 transition-all duration-300 hover:shadow-xl">
@@ -1136,14 +1126,14 @@ export default function CustomersPage() {
             <div className="mb-6 flex justify-center">
               <button
                 onClick={() => {
-                  setActiveStat(null);
+                  setActiveStat('active'); // Default to active
                   const filters = getApiFilters();
                   fetchCustomers(1, filters);
                 }}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center space-x-2"
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg flex items-center space-x-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Show All Members</span>
+                <span>Show Active Members (Default)</span>
               </button>
             </div>
           )}
