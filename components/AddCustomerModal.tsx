@@ -280,7 +280,7 @@ export default function CustomerModal({
         throw new Error('Invalid response from server');
       }
 
-      console.log('✅ API response:', resultCustomer);
+  
 
       // WhatsApp notification only for new customers
       if (!isEditMode && formData.phone.trim()) {
@@ -310,7 +310,7 @@ export default function CustomerModal({
 
       // Call the appropriate callback - DON'T show SweetAlert here
       if (isEditMode && customer && onUpdate) {
-        console.log('🔄 Calling onUpdate callback');
+     
         onUpdate(customer.id, {
           name: formData.name,
           phone: formData.phone.trim() || null,
@@ -322,7 +322,7 @@ export default function CustomerModal({
           isActive: customer.isActive,
         });
       } else if (onSave) {
-        console.log('💾 Calling onSave callback');
+      
         onSave({
           name: formData.name,
           phone: formData.phone.trim() || null,
@@ -336,8 +336,7 @@ export default function CustomerModal({
         });
       }
 
-      // REMOVED: Don't show success SweetAlert here - let parent component handle it
-      console.log('✅ Customer operation completed successfully');
+
 
       onClose();
     } catch (error) {
