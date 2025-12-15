@@ -212,6 +212,12 @@ export default function CustomerModal({
       }
 
       const submitFormData = new FormData();
+
+      // ADD THIS BLOCK:
+      if (isEditMode && customer?.id) {
+        submitFormData.append("id", customer.id);
+      }
+
       submitFormData.append("name", formData.name);
       
       if (formData.phone.trim()) {
@@ -321,6 +327,17 @@ export default function CustomerModal({
           image: formData.image,
           isActive: customer.isActive,
         });
+
+        // SUCCESS ALERT FOR UPDATE
+        await Swal.fire({
+          icon: "success",
+          title: "Member Updated",
+          text: `${formData.name} has been updated successfully!`,
+          timer: 2000,
+          showConfirmButton: false,
+        });
+
+        
       } else if (onSave) {
       
         onSave({
