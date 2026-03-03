@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-const BAWA_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJoa3pyeVM5TkVOd3dFb05DR2tNMDhwSkdVTHVOa3pyOCIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzU5OTM4MjcwfQ.sd1fZmbnGg-fIqT7scDPsc0hS4d2ozhoYsY4Bom2uuU";
-const INSTANCE_ID = "eyJ1aWQiOiJoa3pyeVM5TkVOd3dFb05DR2tNMDhwSkdVTHVOa3pyOCIsImNsaWVudF9pZCI6IkxpYmFheCJ9";
+const BAWA_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIzMzl3aG4xVWVvWTVabGtHS0JhVG9JbnQyc1dCZ29xVSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzQwNDY2NDY4fQ._Ul8BYxqcqYQ1k1fNlRZEhQeQ5Y_uzG9zWhtsXuCFdI";
+const INSTANCE_ID = "eyJ1aWQiOiIzMzl3aG4xVWVvWTVabGtHS0JhVG9JbnQyc1dCZ29xVSIsImNsaWVudF9pZCI6IlRhYW0gU29sdXRpb25zIn0=";
 
 
 export async function POST(req: Request) {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     if (messageType === "welcome") {
       // Welcome message for new registration
-      message = `*${title}, ${name},* \n\nKusoo Dhawoow LIBAAX FITNESS, GYM-ka ugu casrisan ee ku yaala magaaladda Burco.\n\n*Taariikhda Diiwaan Gelinta:* ${registerDate}\n\nFarxad gaar ah ayay noo tahay in aad kamid noqoto Bahda Libaax Fitness.\n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
+      message = `*${title}, ${name},* \n\nKusoo Dhawoow OLYMPIC GYM, GYM-ka ugu casrisan ee ku yaala magaaladda Burco.\n\n*Taariikhda Diiwaan Gelinta:* ${registerDate}\n\nFarxad gaar ah ayay noo tahay in aad kamid noqoto Bahda OLYMPIC GYM.\n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
       
     } else if (messageType === "payment") {
       // Payment reminder message
@@ -29,13 +29,13 @@ export async function POST(req: Request) {
       // Renewal confirmation message
       const renewalDate = expireDate || registerDate;
       
-      message = `*Mahadsanid ${title} ${name}!* \n\nWaxaad si buuxda u cusboonaysiisay Subscription-ka GYM-ka Libaax Fitness.\n\n*Macluumaadka Cusboonaysiinta:*
+      message = `*Mahadsanid ${title} ${name}!* \n\nWaxaad si buuxda u cusboonaysiisay Subscription-ka GYM-ka OLYMPIC GYM.\n\n*Macluumaadka Cusboonaysiinta:*
         Lacagta: $${fee}
-        Taariikhda Dhamaadka: ${expireDate || '1 bil gudahood'}\n\nWaad ku mahadsan tahay inaad kamid tahay Bahda Libaax Fitness! \n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
+        Taariikhda Dhamaadka: ${expireDate || '1 bil gudahood'}\n\nWaad ku mahadsan tahay inaad kamid tahay Bahda OLYMPIC GYM! \n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
       
     // } else if (messageType === "admin") {
     //   // Admin notification message
-    //   message = `*XUBIN CUSUB  M BAHDA LIBAAX FITNESS!*\n\n*Magaca:* ${title} ${name}\n*Telefoonka:* ${phone}\n*Jinsiga:* ${gender}\n*Lacagta:* $${fee}\n*Taariikhda:* ${registerDate}\n\n*Ku soo dhawoow cusbacaal!* `;
+    //   message = `*XUBIN CUSUB  M BAHDA OLYMPIC GYM!*\n\n*Magaca:* ${title} ${name}\n*Telefoonka:* ${phone}\n*Jinsiga:* ${gender}\n*Lacagta:* $${fee}\n*Taariikhda:* ${registerDate}\n\n*Ku soo dhawoow cusbacaal!* `;
     }
 
     // Format phone number for WhatsApp

@@ -129,8 +129,8 @@ function useCustomers() {
         icon: 'error',
         title: 'Error Loading Customers',
         text: error instanceof Error ? error.message : 'An unexpected error occurred while fetching customers.',
-        timer: 4000,
-        showConfirmButton: true,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#2563eb',
       });
     } finally {
       setLoading(false);
@@ -160,9 +160,10 @@ function useCustomers() {
         Swal.fire({
           icon: 'success',
           title: `${statType.charAt(0).toUpperCase() + statType.slice(1)} Members`,
-          text: `Showing ${data.pagination?.totalCount} ${statType} members`,
+          text: `Showing ${data.pagination?.totalCount ?? 0} ${statType} members`,
           timer: 2000,
           showConfirmButton: false,
+          timerProgressBar: true,
         });
       } else {
         throw new Error('Failed to fetch stat data');
@@ -172,8 +173,9 @@ function useCustomers() {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Failed to load member data',
-        timer: 3000,
+        text: 'Failed to load member data. Please try again.',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#2563eb',
       });
     }
   }, [activeStat, fetchCustomers]);
@@ -380,6 +382,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
     text: `${newCustomer.name} has been successfully added.`,
     timer: 2000,
     showConfirmButton: false,
+    timerProgressBar: true,
   });
 };
 
@@ -500,15 +503,13 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
         `,
         confirmButtonText: 'Great!',
         confirmButtonColor: '#10b981',
-        timer: 5000,
-        timerProgressBar: true,
       });
     } catch (error) {
       console.error('Error during renewal:', error);
       Swal.fire({
         icon: 'error',
         title: 'Renewal Failed',
-        text: error instanceof Error ? error.message : 'Failed to process renewal. Please try again.',
+        text: String(error instanceof Error ? error.message : 'Failed to process renewal. Please try again.'),
         confirmButtonText: 'OK',
         confirmButtonColor: '#ef4444',
       });
@@ -522,8 +523,8 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
         icon: 'warning',
         title: 'No Customers Selected',
         text: 'Please select at least one customer to send WhatsApp message.',
-        timer: 2000,
-        showConfirmButton: false,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#2563eb',
       });
       return;
     }
@@ -625,8 +626,6 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
             `,
             confirmButtonText: 'Great!',
             confirmButtonColor: '#10b981',
-            timer: 5000,
-            timerProgressBar: true,
           });
         } else if (successCount > 0) {
           Swal.fire({
@@ -634,7 +633,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
             title: 'Partial Success',
             html: `
               <div class="text-left">
-                <p><strong>${successCount}</strong> message(s) sent successfully</p>
+                <p><strong>${successCount}</strong> message(s) sent successfully.</p>
                 <p><strong>${failCount}</strong> message(s) failed to send</p>
                 <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                   <p class="text-sm text-yellow-800">Some customers may not have received the payment reminder.</p>
@@ -658,7 +657,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'An unexpected error occurred while sending messages.',
+          text: error instanceof Error ? error.message : 'An unexpected error occurred while sending messages. Please try again.',
           confirmButtonText: 'OK',
           confirmButtonColor: '#ef4444',
         });
@@ -701,8 +700,9 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
         Swal.fire({
           icon: 'error',
           title: 'Logout Failed',
-          text: 'Failed to logout. Please try again.',
-          confirmButtonText: 'OK'
+          text: error instanceof Error ? error.message : 'Failed to logout. Please try again.',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#ef4444',
         });
       }
     }
@@ -735,8 +735,8 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
       icon: 'info',
       title: 'Report Generation',
       text: `${type} report generation feature will be implemented soon.`,
-      timer: 3000,
-      showConfirmButton: false,
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#2563eb',
     });
   };
 
