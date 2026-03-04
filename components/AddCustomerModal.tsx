@@ -611,7 +611,7 @@ export default function CustomerModal({
               {/* Camera Button */}
               <button
                 type="button"
-                onClick={startCamera}
+                onClick={() => startCamera()}
                 disabled={isLoading}
                 className="absolute bottom-0 left-0 bg-green-500 text-white p-2 rounded-full shadow-lg hover:bg-green-600 transition-colors disabled:opacity-50"
               >
@@ -662,7 +662,7 @@ export default function CustomerModal({
                 </button>
                 <button
                   type="button"
-                  onClick={startCamera}
+                  onClick={() => startCamera()}
                   className="text-xs text-green-600 hover:text-green-800 font-medium"
                 >
                   📷 Take Photo
