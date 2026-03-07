@@ -931,6 +931,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
               onAddMember={() => setIsCustomerModalOpen(true)}
               onIncomeStatement={() => setIsIncomeStatementModalOpen(true)}
               userName={session?.user?.name || session?.user?.email?.split('@')[0] || null}
+              userRole={session?.user?.role || null}
             />
           )}
           {activeView === 'payments' && <PaymentsTable />}

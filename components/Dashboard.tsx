@@ -40,6 +40,7 @@ interface DashboardProps {
   onAddMember: () => void;
   onIncomeStatement: () => void;
   userName?: string | null;
+   userRole?: string | null;
 }
 
 export default function Dashboard({
@@ -47,6 +48,7 @@ export default function Dashboard({
   onAddMember,
   onIncomeStatement,
   userName,
+  userRole,
 }: DashboardProps) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,7 @@ export default function Dashboard({
   }
 
   const { members, financials, period } = stats;
+  const showFinancials = userRole !== 'staff';
 
   return (
     <div className="space-y-8">
@@ -187,72 +190,74 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Financial Overview */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          {period.month} {period.year} Financials
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Revenue</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(financials.revenue)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">This month</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Total Balances</p>
-                <p className="text-2xl font-bold text-amber-600">{formatCurrency(financials.totalBalances ?? 0)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Owed by members</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
-                <TrendingDown className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Expenses</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(financials.expenses)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">This month</p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            onClick={onIncomeStatement}
-            className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl hover:border-blue-200 transition-all cursor-pointer"
-          >
-            <div className="flex items-center justify-between">
+      {/* Financial Overview - hidden for staff users */}
+      {showFinancials && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            {period.month} {period.year} Financials
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
               <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${financials.netIncome >= 0 ? 'bg-blue-100' : 'bg-amber-100'}`}>
-                  <DollarSign className={`w-6 h-6 ${financials.netIncome >= 0 ? 'text-blue-600' : 'text-amber-600'}`} />
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Net Income</p>
-                  <p className={`text-2xl font-bold ${financials.netIncome >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
-                    {formatCurrency(financials.netIncome)}
-                  </p>
+                  <p className="text-sm font-medium text-gray-500">Revenue</p>
+                  <p className="text-2xl font-bold text-green-600">{formatCurrency(financials.revenue)}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">This month</p>
                 </div>
               </div>
-              <BarChart3 className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Total Balances</p>
+                  <p className="text-2xl font-bold text-amber-600">{formatCurrency(financials.totalBalances ?? 0)}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Owed by members</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                  <TrendingDown className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Expenses</p>
+                  <p className="text-2xl font-bold text-red-600">{formatCurrency(financials.expenses)}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">This month</p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={onIncomeStatement}
+              className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl hover:border-blue-200 transition-all cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${financials.netIncome >= 0 ? 'bg-blue-100' : 'bg-amber-100'}`}>
+                    <DollarSign className={`w-6 h-6 ${financials.netIncome >= 0 ? 'text-blue-600' : 'text-amber-600'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Net Income</p>
+                    <p className={`text-2xl font-bold ${financials.netIncome >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
+                      {formatCurrency(financials.netIncome)}
+                    </p>
+                  </div>
+                </div>
+                <BarChart3 className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Quick Actions */}
       <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
@@ -272,13 +277,15 @@ export default function Dashboard({
             <Users className="w-5 h-5" />
             Members List
           </button>
-          <button
-            onClick={onIncomeStatement}
-            className="flex items-center gap-3 px-6 py-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold transition-colors"
-          >
-            <BarChart3 className="w-5 h-5 text-blue-600" />
-            Income Statement
-          </button>
+          {showFinancials && (
+            <button
+              onClick={onIncomeStatement}
+              className="flex items-center gap-3 px-6 py-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold transition-colors"
+            >
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              Income Statement
+            </button>
+          )}
         </div>
       </div>
     </div>
