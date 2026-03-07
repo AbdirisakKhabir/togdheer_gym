@@ -93,8 +93,7 @@ export default function UsersTable({ onAddUser }: { onAddUser: () => void }) {
   }
 
   return (
-    <>
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
       <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-gray-800">Users</h2>
@@ -183,7 +182,6 @@ export default function UsersTable({ onAddUser }: { onAddUser: () => void }) {
           </button>
         </div>
       </div>
-
       <EditUserModal
         isOpen={isEditOpen}
         onClose={() => {
@@ -193,6 +191,6 @@ export default function UsersTable({ onAddUser }: { onAddUser: () => void }) {
         user={editingUser}
         onUpdated={fetchUsers}
       />
-    </>
+    </div>
   );
 }
