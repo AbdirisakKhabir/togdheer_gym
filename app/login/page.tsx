@@ -111,14 +111,14 @@ export default function LoginPage() {
             <div className="flex justify-center mb-6">
               <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden bg-white/10 border-2 border-white/30 shadow-xl flex items-center justify-center p-2 backdrop-blur-sm">
                 <img
-                  src="/olmbic%20eh.png"
-                  alt="Olympic Gym Logo"
+                  src="/togdheer-logo.png"
+                  alt="Togdheer Gym Logo"
                   className="w-full h-full object-contain"
                 />
               </div>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-            <p className="text-blue-100">Sign in to your Olympic Gym account</p>
+            <p className="text-blue-100">Sign in to your Togdheer Gym account</p>
           </div>
 
           {/* Login Form */}

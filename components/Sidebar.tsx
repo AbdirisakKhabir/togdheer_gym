@@ -92,9 +92,9 @@ export default function Sidebar({
       <div className="relative p-6 border-b border-white/10 flex items-center justify-between">
         <div className="flex flex-col items-center gap-2 w-full">
           <img
-            src="/olmbic%20eh.png"
-            alt="Libaax Fitness"
-            className="w-full h-28 rounded-xl object-cover  shadow-lg"
+            src="/togdheer-logo.png"
+            alt="Togdheer Gym"
+            className="w-full h-28 rounded-xl object-contain shadow-lg"
           />
           
         </div>

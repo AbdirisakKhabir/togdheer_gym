@@ -125,9 +125,9 @@ export default function CustomerDetailModal({
     
     let message;
     if (!expireDate || isExpired) {
-      message = `Hello ${customer.name}, your gym membership needs attention. Please contact us for more information. Thank you for being a valued member!`;
+      message = `Hello ${customer.name}, your Togdheer Gym membership needs attention. Please contact us for more information. Thank you for being a valued member!`;
     } else {
-      message = `Hello ${customer.name}, your gym membership expires on ${formatExpireDate(customer.expireDate)}. Please renew to continue enjoying our services!`;
+      message = `Hello ${customer.name}, your Togdheer Gym membership expires on ${formatExpireDate(customer.expireDate)}. Please renew to continue enjoying our services!`;
     }
     
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;

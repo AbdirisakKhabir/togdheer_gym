@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     if (messageType === "welcome") {
       // Welcome message for new registration
-      message = `*${title}, ${name},* \n\nKusoo Dhawoow OLYMPIC GYM, GYM-ka ugu casrisan ee ku yaala magaaladda Burco.\n\n*Taariikhda Diiwaan Gelinta:* ${registerDate}\n\nFarxad gaar ah ayay noo tahay in aad kamid noqoto Bahda OLYMPIC GYM.\n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
+      message = `*${title}, ${name},* \n\nKusoo Dhawoow TOGDHEER FITNESS CENTER, GYM-ka ugu casrisan ee ku yaala magaaladda Burco.\n\n*Taariikhda Diiwaan Gelinta:* ${registerDate}\n\nFarxad gaar ah ayay noo tahay in aad kamid noqoto Bahda TOGDHEER FITNESS CENTER.\n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
       
     } else if (messageType === "payment") {
       // Payment reminder message
@@ -29,13 +29,13 @@ export async function POST(req: Request) {
       // Renewal confirmation message
       const renewalDate = expireDate || registerDate;
       
-      message = `*Mahadsanid ${title} ${name}!* \n\nWaxaad si buuxda u cusboonaysiisay Subscription-ka GYM-ka OLYMPIC GYM.\n\n*Macluumaadka Cusboonaysiinta:*
+      message = `*Mahadsanid ${title} ${name}!* \n\nWaxaad si buuxda u cusboonaysiisay Subscription-ka GYM-ka TOGDHEER FITNESS CENTER.\n\n*Macluumaadka Cusboonaysiinta:*
         Lacagta: $${fee}
-        Taariikhda Dhamaadka: ${expireDate || '1 bil gudahood'}\n\nWaad ku mahadsan tahay inaad kamid tahay Bahda OLYMPIC GYM! \n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
+        Taariikhda Dhamaadka: ${expireDate || '1 bil gudahood'}\n\nWaad ku mahadsan tahay inaad kamid tahay Bahda TOGDHEER FITNESS CENTER! \n\n *Nidaamkan waxa hirgaliyay shirkada adeegyada tiknoolajiga ee TAAM SOLUTIONS.*`;
       
     // } else if (messageType === "admin") {
     //   // Admin notification message
-    //   message = `*XUBIN CUSUB  M BAHDA OLYMPIC GYM!*\n\n*Magaca:* ${title} ${name}\n*Telefoonka:* ${phone}\n*Jinsiga:* ${gender}\n*Lacagta:* $${fee}\n*Taariikhda:* ${registerDate}\n\n*Ku soo dhawoow cusbacaal!* `;
+    //   message = `*XUBIN CUSUB  M BAHDA TOGDHEER FITNESS CENTER!*\n\n*Magaca:* ${title} ${name}\n*Telefoonka:* ${phone}\n*Jinsiga:* ${gender}\n*Lacagta:* $${fee}\n*Taariikhda:* ${registerDate}\n\n*Ku soo dhawoow cusbacaal!* `;
     }
 
     // Format phone number for WhatsApp
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'LibaaxFitness/1.0'
+          'User-Agent': 'TogdheerGym/1.0'
         },
         signal: controller.signal
       });

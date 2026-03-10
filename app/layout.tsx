@@ -14,10 +14,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OLYMPIC GYM",
-  description: "Member Management System",
+  title: "Togdheer Gym",
+  description: "Togdheer Gym - Member Management System",
+  applicationName: "Togdheer Gym",
   icons: {
     icon: "/favicon.png",
+  },
+  openGraph: {
+    title: "Togdheer Gym",
+    description: "Togdheer Gym - Member Management System",
+    siteName: "Togdheer Gym",
+  },
+  twitter: {
+    card: "summary",
+    title: "Togdheer Gym",
+    description: "Togdheer Gym - Member Management System",
   },
 };
 

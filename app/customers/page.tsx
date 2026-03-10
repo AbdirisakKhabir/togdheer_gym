@@ -682,7 +682,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
   const handleLogout = async () => {
     const result = await Swal.fire({
       title: 'Logout Confirmation',
-      text: 'Are you sure you want to logout from Libaax Fitness?',
+      text: 'Are you sure you want to logout from Togdheer Gym?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Yes, Logout',
