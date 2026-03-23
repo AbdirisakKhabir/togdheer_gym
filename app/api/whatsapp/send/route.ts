@@ -53,16 +53,6 @@ export async function POST(req: Request) {
 
     const jid = `${cleanPhone}@s.whatsapp.net`;
 
-    console.log('📱 Sending WhatsApp message:');
-    console.log('Phone:', phone);
-    console.log('Formatted:', formattedPhone);
-    console.log('Clean phone:', cleanPhone);
-    console.log('JID:', jid);
-    console.log('Message type:', messageType);
-    console.log('Gender:', gender);
-    console.log('Title:', title);
-    console.log('Message:', message);
-
     // Construct the API URL
     const apiUrl = `https://bawa.app/api/v1/send-text?token=${BAWA_TOKEN}&instance_id=${INSTANCE_ID}&jid=${jid}&msg=${encodeURIComponent(message)}`;
 
