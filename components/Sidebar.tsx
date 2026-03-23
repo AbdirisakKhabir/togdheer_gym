@@ -91,11 +91,13 @@ export default function Sidebar({
       {/* Logo & Brand */}
       <div className="relative p-6 border-b border-white/10 flex items-center justify-between">
         <div className="flex flex-col items-center gap-2 w-full">
-          <img
-            src="/togdheer-logo.png"
-            alt="Togdheer Gym"
-            className="w-full h-28 rounded-xl object-contain shadow-lg"
-          />
+          <div className="w-full bg-white rounded-xl p-2 shadow-lg">
+            <img
+              src="/togdheer-logo.png"
+              alt="Togdheer Gym"
+              className="w-full h-28 rounded-lg object-contain"
+            />
+          </div>
           
         </div>
         {onToggle && (

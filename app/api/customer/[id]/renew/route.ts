@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/lib/auth";
+import { canAccessGender, resolveAllowedGenders } from "@/app/lib/memberAccess";
 
 const prisma = new PrismaClient();
 
@@ -14,6 +17,19 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+    if (Array.isArray(allowedGenders) && allowedGenders.length === 0) {
+      return NextResponse.json(
+        { error: "No member gender access assigned for this role" },
+        { status: 403 }
+      );
+    }
+
     // Await the params to get the actual values
     const { id } = await params;
     const customerId = parseInt(id, 10);
@@ -42,6 +58,12 @@ export async function POST(
       return NextResponse.json(
         { error: "Customer not found" },
         { status: 404 }
+      );
+    }
+    if (!canAccessGender(allowedGenders, existingCustomer.gender)) {
+      return NextResponse.json(
+        { error: "You are not allowed to access this member" },
+        { status: 403 }
       );
     }
 

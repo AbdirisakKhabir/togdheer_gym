@@ -8,6 +8,8 @@ const prisma = new PrismaClient();
 
 const DEFAULT_PERMISSIONS = [
   { code: "members:view", name: "View Members", description: "View members list" },
+  { code: "members:view:male", name: "View Male Members", description: "View male members only" },
+  { code: "members:view:female", name: "View Female Members", description: "View female members only" },
   { code: "members:create", name: "Create Members", description: "Add new members" },
   { code: "members:edit", name: "Edit Members", description: "Edit member details" },
   { code: "members:delete", name: "Delete Members", description: "Delete members" },
@@ -30,6 +32,32 @@ const DEFAULT_ROLES = [
     name: "admin",
     description: "Full access to all features",
     permissionCodes: DEFAULT_PERMISSIONS.map((p) => p.code),
+  },
+  {
+    name: "male_user",
+    description: "Can access male members only",
+    permissionCodes: [
+      "members:view:male",
+      "members:create",
+      "members:edit",
+      "payments:view",
+      "payments:create",
+      "reports:view",
+      "expenses:view",
+    ],
+  },
+  {
+    name: "female_user",
+    description: "Can access female members only",
+    permissionCodes: [
+      "members:view:female",
+      "members:create",
+      "members:edit",
+      "payments:view",
+      "payments:create",
+      "reports:view",
+      "expenses:view",
+    ],
   },
   {
     name: "manager",

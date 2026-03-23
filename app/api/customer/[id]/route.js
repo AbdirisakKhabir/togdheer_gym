@@ -2,6 +2,9 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { v2 as cloudinary } from "cloudinary";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/lib/auth";
+import { canAccessGender, resolveAllowedGenders } from "@/app/lib/memberAccess";
 
 // Cloudinary setup
 cloudinary.config({
@@ -11,6 +14,29 @@ cloudinary.config({
 });
 
 const prisma = new PrismaClient();
+
+async function getAllowedGendersOrError() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.role) {
+    return {
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      allowedGenders: null,
+    };
+  }
+
+  const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+  if (Array.isArray(allowedGenders) && allowedGenders.length === 0) {
+    return {
+      error: NextResponse.json(
+        { error: "No member gender access assigned for this role" },
+        { status: 403 }
+      ),
+      allowedGenders: null,
+    };
+  }
+
+  return { error: null, allowedGenders };
+}
 
 // Helper: Upload to Cloudinary
 async function uploadToCloudinary(file, resourceType = "image") {
@@ -47,6 +73,9 @@ function parseDate(dateString) {
 // GET - Fetch single customer
 export async function GET(request, { params }) {
   try {
+    const access = await getAllowedGendersOrError();
+    if (access.error) return access.error;
+
     const { id } = await params; // Next.js 15 Fix: Unwrap params
     const customerId = parseInt(id);
 
@@ -55,6 +84,12 @@ export async function GET(request, { params }) {
     });
     if (!customer)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!canAccessGender(access.allowedGenders, customer.gender)) {
+      return NextResponse.json(
+        { error: "You are not allowed to access this member" },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json(customer);
   } catch (error) {
@@ -65,6 +100,9 @@ export async function GET(request, { params }) {
 // PUT - Update customer
 export async function PUT(request, { params }) {
   try {
+    const access = await getAllowedGendersOrError();
+    if (access.error) return access.error;
+
     // 1. Unwrap the params Promise (Next.js 15 Requirement)
     const resolvedParams = await params;
     const customerId = parseInt(resolvedParams.id);
@@ -100,6 +138,20 @@ export async function PUT(request, { params }) {
       return NextResponse.json(
         { error: "Customer not found" },
         { status: 404 }
+      );
+    }
+    if (!canAccessGender(access.allowedGenders, existingCustomer.gender)) {
+      return NextResponse.json(
+        { error: "You are not allowed to access this member" },
+        { status: 403 }
+      );
+    }
+
+    const targetGender = gender?.toString() || existingCustomer.gender;
+    if (!canAccessGender(access.allowedGenders, targetGender)) {
+      return NextResponse.json(
+        { error: "You are not allowed to assign this member gender" },
+        { status: 403 }
       );
     }
 
@@ -149,8 +201,25 @@ export async function PUT(request, { params }) {
 // DELETE - Remove customer
 export async function DELETE(request, { params }) {
   try {
+    const access = await getAllowedGendersOrError();
+    if (access.error) return access.error;
+
     const { id } = await params; // Next.js 15 Fix: Unwrap params
     const customerId = parseInt(id);
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { id: true, gender: true },
+    });
+    if (!customer) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (!canAccessGender(access.allowedGenders, customer.gender)) {
+      return NextResponse.json(
+        { error: "You are not allowed to access this member" },
+        { status: 403 }
+      );
+    }
 
     await prisma.customer.delete({ where: { id: customerId } });
     return NextResponse.json({ message: "Deleted" });

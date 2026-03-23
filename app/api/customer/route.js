@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { v2 as cloudinary } from "cloudinary";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/lib/auth";
+import { canAccessGender, resolveAllowedGenders } from "@/app/lib/memberAccess";
 
 // Cloudinary setup
 cloudinary.config({
@@ -50,6 +53,22 @@ function parseDate(dateString) {
 
 export async function POST(req) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+    if (Array.isArray(allowedGenders) && allowedGenders.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No member gender access assigned for this role" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const formData = await req.formData();
 
     const name = formData.get("name");
@@ -70,6 +89,13 @@ export async function POST(req) {
       return new Response(
         JSON.stringify({ error: "All required fields must be filled" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!canAccessGender(allowedGenders, gender?.toString())) {
+      return new Response(
+        JSON.stringify({ error: "You are not allowed to access this member gender" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
       );
     }
 

@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/lib/auth";
+import { buildGenderAccessWhere, resolveAllowedGenders } from "@/app/lib/memberAccess";
 
 const prisma = new PrismaClient();
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+    const accessWhere = buildGenderAccessWhere(allowedGenders);
+    if (accessWhere === null) {
+      return NextResponse.json(
+        { error: "No member gender access assigned for this role" },
+        { status: 403 }
+      );
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextWeek = new Date(today);
@@ -14,6 +31,11 @@ export async function GET() {
     const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     lastOfMonth.setHours(23, 59, 59, 999);
+
+    const mergeWhere = (where = {}) => {
+      if (!accessWhere || Object.keys(accessWhere).length === 0) return where;
+      return Object.keys(where).length > 0 ? { AND: [where, accessWhere] } : accessWhere;
+    };
 
     const [
       totalMembers,
@@ -25,24 +47,24 @@ export async function GET() {
       monthlyExpenses,
       totalBalances,
     ] = await Promise.all([
-      prisma.customer.count(),
+      prisma.customer.count({ where: mergeWhere({}) }),
       prisma.customer.count({
-        where: {
+        where: mergeWhere({
           isActive: true,
           expireDate: { gte: today },
-        },
+        }),
       }),
       prisma.customer.count({
-        where: {
+        where: mergeWhere({
           OR: [{ expireDate: { lt: today } }, { isActive: false }],
-        },
+        }),
       }),
       prisma.customer.count({
-        where: {
+        where: mergeWhere({
           expireDate: { gte: today, lte: nextWeek },
-        },
+        }),
       }),
-      prisma.customer.count({ where: { expireDate: null } }),
+      prisma.customer.count({ where: mergeWhere({ expireDate: null }) }),
       prisma.payment.aggregate({
         where: {
           date: { gte: firstOfMonth, lte: lastOfMonth },
@@ -56,6 +78,7 @@ export async function GET() {
         _sum: { amount: true },
       }),
       prisma.customer.aggregate({
+        where: mergeWhere({}),
         _sum: { balance: true },
       }),
     ]);

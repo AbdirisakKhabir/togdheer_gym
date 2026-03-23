@@ -1,11 +1,28 @@
 // app/api/customers/route.js
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/lib/auth";
+import { buildGenderAccessWhere, resolveAllowedGenders } from "@/app/lib/memberAccess";
 
 const prisma = new PrismaClient();
 
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.role) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+    const accessWhere = buildGenderAccessWhere(allowedGenders);
+    if (accessWhere === null) {
+      return NextResponse.json(
+        { error: "No member gender access assigned for this role" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const status = searchParams.get("status");
@@ -16,6 +33,22 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "200");
     const skip = (page - 1) * limit;
+
+    if (gender && gender !== "all" && allowedGenders) {
+      const normalizedGender = gender.toLowerCase();
+      if (!allowedGenders.includes(normalizedGender)) {
+        return NextResponse.json({
+          customers: [],
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalCount: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        });
+      }
+    }
 
     // Build where clause for filtering
     let where = {};
@@ -131,6 +164,10 @@ export async function GET(request) {
       if (expireDate) {
         where.expireDate = expireDate;
       }
+    }
+
+    if (Object.keys(accessWhere).length > 0) {
+      where = Object.keys(where).length > 0 ? { AND: [where, accessWhere] } : accessWhere;
     }
 
     // Get customers with pagination
