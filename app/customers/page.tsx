@@ -430,6 +430,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
   const handleRenewal = async (renewalData: {
     customerIds: string[];
     paidAmounts: { [key: string]: number };
+    discounts: { [key: string]: number };
     expireDates: { [key: string]: string };
   }) => {
     try {
@@ -446,6 +447,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
             body: JSON.stringify({
               expireDate: renewalData.expireDates[customerId],
               paidAmount: renewalData.paidAmounts[customerId],
+              discount: renewalData.discounts[customerId] || 0,
               userId: session?.user?.id || 1,
             }),
           });

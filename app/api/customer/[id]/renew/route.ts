@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 interface RenewRequest {
   expireDate: string;
   paidAmount: number | string;
+  discount?: number | string;
   userId: number | string;
 }
 
@@ -35,16 +36,29 @@ export async function POST(
     const customerId = parseInt(id, 10);
 
     // Parse request body
-    const { expireDate, paidAmount, userId }: RenewRequest = await request.json();
+    const { expireDate, paidAmount, discount = 0, userId }: RenewRequest = await request.json();
 
     // Convert to numeric values
     const numericUserId = parseInt(userId as string, 10);
     const numericPaidAmount = parseFloat(paidAmount as string);
+    const numericDiscount = parseFloat(discount as string);
 
     // Validate required fields
     if (!expireDate || isNaN(numericPaidAmount) || isNaN(numericUserId)) {
       return NextResponse.json(
         { error: "Expire date, paid amount, and user ID are required and must be valid" },
+        { status: 400 }
+      );
+    }
+    if (numericPaidAmount <= 0) {
+      return NextResponse.json(
+        { error: "Paid amount must be greater than zero" },
+        { status: 400 }
+      );
+    }
+    if (isNaN(numericDiscount) || numericDiscount < 0) {
+      return NextResponse.json(
+        { error: "Discount must be a valid non-negative number" },
         { status: 400 }
       );
     }
@@ -76,8 +90,7 @@ export async function POST(
       );
     }
 
-    // Calculate new balance: amountDue = existingBalance + fee, newBalance = amountDue - paidAmount - discount
-    const numericDiscount = 0;
+    // Calculate new balance: amountDue = previousBalance + currentFee
     const amountDue = (existingCustomer.balance ?? 0) + existingCustomer.fee;
     const newBalance = Math.max(0, amountDue - numericPaidAmount - numericDiscount);
 
@@ -86,7 +99,6 @@ export async function POST(
       where: { id: customerId },
       data: {
         expireDate: newExpireDate,
-        fee: numericPaidAmount,
         balance: newBalance,
         isActive: true,
         updatedAt: new Date(),

@@ -8,6 +8,7 @@ interface RenewalModalProps {
   onRenew: (renewalData: {
     customerIds: string[];
     paidAmounts: { [key: string]: number };
+    discounts: { [key: string]: number };
     expireDates: { [key: string]: string };
   }) => void;
   selectedCount: number;
@@ -24,6 +25,7 @@ export default function RenewalModal({
   currentUser 
 }: RenewalModalProps) {
   const [paidAmounts, setPaidAmounts] = useState<{ [key: string]: number }>({});
+  const [discounts, setDiscounts] = useState<{ [key: string]: number }>({});
   const [expireDates, setExpireDates] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,12 +42,14 @@ export default function RenewalModal({
       console.log('🔄 Setting default values for:', selectedCustomers.length, 'customers');
       
       const defaultAmounts: { [key: string]: number } = {};
+      const defaultDiscounts: { [key: string]: number } = {};
       const defaultDates: { [key: string]: string } = {};
 
       selectedCustomers.forEach(customer => {
         console.log('📝 Processing customer:', customer.id, customer.name);
         // Set default paid amount to customer's fee
         defaultAmounts[customer.id] = customer.fee || 0;
+        defaultDiscounts[customer.id] = 0;
         
         // Set default expire date to 1 month from now
         const defaultDate = new Date();
@@ -57,6 +61,7 @@ export default function RenewalModal({
       console.log('📅 Default dates:', defaultDates);
       
       setPaidAmounts(defaultAmounts);
+      setDiscounts(defaultDiscounts);
       setExpireDates(defaultDates);
     } else if (isOpen && selectedCustomers.length === 0) {
       console.warn('⚠️ Modal is open but no selected customers!');
@@ -75,6 +80,14 @@ export default function RenewalModal({
     setExpireDates(prev => ({
       ...prev,
       [customerId]: date
+    }));
+  };
+
+  const handleDiscountChange = (customerId: string, amount: string) => {
+    const numAmount = parseFloat(amount) || 0;
+    setDiscounts(prev => ({
+      ...prev,
+      [customerId]: numAmount
     }));
   };
 
@@ -111,6 +124,17 @@ export default function RenewalModal({
         return;
       }
 
+      if ((discounts[customer.id] || 0) < 0) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Invalid Discount',
+          text: `Discount cannot be negative for ${customer.name}`,
+          timer: 3000,
+          showConfirmButton: false,
+        });
+        return;
+      }
+
       // Validate expire date is in the future
       const expireDate = new Date(expireDates[customer.id]);
       if (expireDate <= new Date()) {
@@ -131,6 +155,7 @@ export default function RenewalModal({
       await onRenew({
         customerIds: selectedCustomers.map(c => c.id),
         paidAmounts,
+        discounts,
         expireDates
       });
     } catch (error) {
@@ -213,10 +238,20 @@ export default function RenewalModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Current Balance (readonly) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Current Balance
+                      </label>
+                      <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-100 text-gray-800 font-semibold">
+                        ${Number(customer.balance ?? 0).toFixed(2)}
+                      </div>
+                    </div>
+
                     {/* Paid Amount Input */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
                         <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
                         Paid Amount *
                       </label>
@@ -240,9 +275,33 @@ export default function RenewalModal({
                       </p>
                     </div>
 
+                    {/* Discount Input */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
+                        Discount
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={discounts[customer.id] || ''}
+                          onChange={(e) => handleDiscountChange(customer.id, e.target.value)}
+                          disabled={isSubmitting}
+                          className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-black focus:border-green-500 bg-white transition-all duration-200 disabled:opacity-50"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Optional discount amount
+                      </p>
+                    </div>
+
                     {/* Expire Date Input */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
                         <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                         New Expire Date *
                       </label>
@@ -260,6 +319,15 @@ export default function RenewalModal({
                       </p>
                     </div>
                   </div>
+                  <p className="text-xs text-gray-600 mt-3">
+                    New balance after payment: $
+                    {Math.max(
+                      0,
+                      ((customer.balance ?? 0) + Number(customer.fee)) -
+                        (paidAmounts[customer.id] || 0) -
+                        (discounts[customer.id] || 0)
+                    ).toFixed(2)}
+                  </p>
                 </div>
               ))
             )}
@@ -278,6 +346,12 @@ export default function RenewalModal({
                     <p className="text-sm text-gray-600">Total Amount</p>
                     <p className="text-xl font-bold text-green-600">
                       ${Object.values(paidAmounts).reduce((sum, amount) => sum + (amount || 0), 0).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <p className="text-sm text-gray-600">Total Discount</p>
+                    <p className="text-xl font-bold text-amber-600">
+                      ${Object.values(discounts).reduce((sum, amount) => sum + (amount || 0), 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
