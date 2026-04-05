@@ -57,13 +57,28 @@ export async function resolveAllowedGenders(prisma, roleName) {
 }
 
 export async function resolveAllowedGendersForUser(prisma, userLike) {
-  const roleName = userLike?.role || "";
+  let roleName = userLike?.role || "";
+  let memberAccess = normalizeMemberAccess(userLike?.memberAccess);
+  const userId = Number(userLike?.id);
+
+  // Always prefer the latest DB value so access changes take effect immediately,
+  // even if the user session token is stale.
+  if (Number.isInteger(userId) && userId > 0) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, memberAccess: true },
+    });
+    if (dbUser) {
+      roleName = dbUser.role || roleName;
+      memberAccess = normalizeMemberAccess(dbUser.memberAccess) || memberAccess;
+    }
+  }
+
   const normalizedRole = roleName.toLowerCase();
   if (ADMIN_ROLES.has(normalizedRole)) {
     return null;
   }
 
-  const memberAccess = normalizeMemberAccess(userLike?.memberAccess);
   if (memberAccess === "male") return ["male"];
   if (memberAccess === "female") return ["female"];
   if (memberAccess === "both") return ["male", "female"];
