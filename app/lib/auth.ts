@@ -11,6 +11,7 @@ const prisma = new PrismaClient();
 interface CustomUser extends User {
   username: string;
   role: string;
+  memberAccess: string;
 }
 
 // Use type intersection instead of interface extension
@@ -18,6 +19,7 @@ type CustomJWT = JWT & {
   id?: string;
   username?: string;
   role?: string;
+  memberAccess?: string;
   exp?: number;
 };
 
@@ -57,6 +59,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id.toString(),
           username: user.username,
           role: user.role,
+          memberAccess: user.memberAccess || "both",
           name: user.username,
           email: `${user.username}@gym.com`
         };
@@ -83,6 +86,7 @@ export const authOptions: NextAuthOptions = {
           id: customUser.id,
           username: customUser.username,
           role: customUser.role,
+          memberAccess: customUser.memberAccess || "both",
           exp: Math.floor(Date.now() / 1000) + (1 * 60 * 60)
         };
       }
@@ -114,7 +118,8 @@ export const authOptions: NextAuthOptions = {
           ...session.user,
           id: customToken.id as string,
           username: customToken.username as string,
-          role: customToken.role as string
+          role: customToken.role as string,
+          memberAccess: (customToken.memberAccess as string) || "both"
         },
         expires: new Date(Date.now() + (1 * 60 * 60 * 1000)).toISOString()
       };

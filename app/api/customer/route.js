@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { v2 as cloudinary } from "cloudinary";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
-import { canAccessGender, resolveAllowedGenders } from "@/app/lib/memberAccess";
+import { canAccessGender, resolveAllowedGendersForUser } from "@/app/lib/memberAccess";
 
 // Cloudinary setup
 cloudinary.config({
@@ -61,7 +61,7 @@ export async function POST(req) {
       });
     }
 
-    const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+    const allowedGenders = await resolveAllowedGendersForUser(prisma, session.user);
     if (Array.isArray(allowedGenders) && allowedGenders.length === 0) {
       return new Response(
         JSON.stringify({ error: "No member gender access assigned for this role" }),

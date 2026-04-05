@@ -17,7 +17,7 @@ export async function PUT(request, { params }) {
 
     const userId = parseInt(id);
     const body = await request.json();
-    const { username, role, password } = body;
+    const { username, role, password, memberAccess } = body;
 
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -35,6 +35,17 @@ export async function PUT(request, { params }) {
 
     if (role) {
       data.role = role;
+    }
+
+    if (memberAccess !== undefined) {
+      const normalizedMemberAccess = String(memberAccess).toLowerCase();
+      if (!["male", "female", "both"].includes(normalizedMemberAccess)) {
+        return NextResponse.json(
+          { error: "Member access must be male, female, or both." },
+          { status: 400 }
+        );
+      }
+      data.memberAccess = normalizedMemberAccess;
     }
 
     if (password) {

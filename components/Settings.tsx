@@ -22,6 +22,7 @@ interface User {
   id: number;
   username: string;
   role: string;
+  memberAccess: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,7 +44,7 @@ export default function Settings() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [roleForm, setRoleForm] = useState({ name: '', description: '', permissionIds: [] as number[] });
   const [permissionForm, setPermissionForm] = useState({ code: '', name: '', description: '' });
-  const [userRoleForm, setUserRoleForm] = useState({ role: '' });
+  const [userRoleForm, setUserRoleForm] = useState({ role: '', memberAccess: 'both' });
 
   const fetchRoles = async () => {
     try {
@@ -105,7 +106,7 @@ export default function Settings() {
 
   const openUserRoleModal = (user: User) => {
     setEditingUser(user);
-    setUserRoleForm({ role: user.role });
+    setUserRoleForm({ role: user.role, memberAccess: user.memberAccess || 'both' });
     setShowUserRoleModal(true);
   };
 
@@ -195,7 +196,7 @@ export default function Settings() {
       const res = await fetch(`/api/users/${editingUser.id}/permissions`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: userRoleForm.role }),
+        body: JSON.stringify({ role: userRoleForm.role, memberAccess: userRoleForm.memberAccess }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -338,7 +339,7 @@ export default function Settings() {
             <div>
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">User Permissions</h3>
-                <p className="text-sm text-gray-500">Change a user&apos;s role to update their permissions.</p>
+                <p className="text-sm text-gray-500">Change user role and gender access (male, female, or both).</p>
               </div>
               <div className="space-y-3">
                 {users.length === 0 ? (
@@ -350,6 +351,9 @@ export default function Settings() {
                         <p className="font-semibold text-gray-700">{u.username}</p>
                         <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                           {u.role}
+                        </span>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 mt-1 ml-2">
+                          {u.memberAccess === 'male' ? 'Male Only' : u.memberAccess === 'female' ? 'Female Only' : 'Male + Female'}
                         </span>
                       </div>
                       <button onClick={() => openUserRoleModal(u)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">
@@ -494,6 +498,16 @@ export default function Settings() {
                 {roles.map((r) => (
                   <option key={r.id} value={r.name}>{r.name}</option>
                 ))}
+              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-2 mt-4">Member Gender Access</label>
+              <select
+                value={userRoleForm.memberAccess}
+                onChange={(e) => setUserRoleForm((p) => ({ ...p, memberAccess: e.target.value }))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="male">Male Only</option>
+                <option value="female">Female Only</option>
+                <option value="both">Male and Female</option>
               </select>
             </div>
             <div className="p-4 border-t border-gray-200 flex gap-2 justify-end">

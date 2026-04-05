@@ -29,6 +29,7 @@ export async function GET(request, { params }) {
       userId: user.id,
       username: user.username,
       role: user.role,
+      memberAccess: user.memberAccess || "both",
       permissions,
     });
   } catch (error) {
@@ -46,11 +47,18 @@ export async function PUT(request, { params }) {
     const { id } = await params;
     const userId = parseInt(id);
     const body = await request.json();
-    const { role } = body;
+    const { role, memberAccess } = body;
+    const normalizedMemberAccess = (memberAccess || "both").toString().toLowerCase();
 
     if (!role?.trim()) {
       return NextResponse.json(
         { error: "Role is required" },
+        { status: 400 }
+      );
+    }
+    if (!["male", "female", "both"].includes(normalizedMemberAccess)) {
+      return NextResponse.json(
+        { error: "Member access must be male, female, or both" },
         { status: 400 }
       );
     }
@@ -67,7 +75,7 @@ export async function PUT(request, { params }) {
 
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { role: role.trim() },
+      data: { role: role.trim(), memberAccess: normalizedMemberAccess },
     });
 
     const updatedRole = await prisma.role.findFirst({
@@ -81,6 +89,7 @@ export async function PUT(request, { params }) {
       userId: user.id,
       username: user.username,
       role: user.role,
+      memberAccess: user.memberAccess || "both",
       permissions: updatedRole?.permissions?.map((rp) => rp.permission) || [],
     });
   } catch (error) {

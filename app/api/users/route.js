@@ -10,6 +10,7 @@ export async function GET() {
         id: true,
         username: true,
         role: true,
+        memberAccess: true,
         createdAt: true,
         updatedAt: true,
         // password is excluded by default

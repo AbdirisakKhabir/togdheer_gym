@@ -217,7 +217,7 @@ function useCustomers() {
   };
 }
 // Custom hook for filters
-const SHIFTS = ['Subaxa', 'Duhurka', 'Galabka', 'Habeenka'] as const;
+const SHIFTS = ['Subaxa', 'Duhurka', 'Galabka', 'Habeenka', 'Boxing'] as const;
 
 function useCustomerFilters() {
   const [selectedFilter, setSelectedFilter] = useState<string>('all');

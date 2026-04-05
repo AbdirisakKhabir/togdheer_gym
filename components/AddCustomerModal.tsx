@@ -20,7 +20,7 @@ export default function CustomerModal({
 }: CustomerModalProps) {
   const isEditMode = Boolean(customer);
   
-  const SHIFTS = ['Subaxa', 'Duhurka', 'Galabka', 'Habeenka'] as const;
+  const SHIFTS = ['Subaxa', 'Duhurka', 'Galabka', 'Habeenka', 'Boxing'] as const;
 
   const [formData, setFormData] = useState({
     name: '',

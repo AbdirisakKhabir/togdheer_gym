@@ -14,6 +14,15 @@ function inferGendersFromRoleName(roleName) {
   return [];
 }
 
+function normalizeMemberAccess(value) {
+  if (!value || typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "male" || normalized === "female" || normalized === "both") {
+    return normalized;
+  }
+  return null;
+}
+
 export async function resolveAllowedGenders(prisma, roleName) {
   const normalizedRole = (roleName || "").toLowerCase();
 
@@ -45,6 +54,21 @@ export async function resolveAllowedGenders(prisma, roleName) {
 
   if (allowed.length > 0) return allowed;
   return inferGendersFromRoleName(roleName);
+}
+
+export async function resolveAllowedGendersForUser(prisma, userLike) {
+  const roleName = userLike?.role || "";
+  const normalizedRole = roleName.toLowerCase();
+  if (ADMIN_ROLES.has(normalizedRole)) {
+    return null;
+  }
+
+  const memberAccess = normalizeMemberAccess(userLike?.memberAccess);
+  if (memberAccess === "male") return ["male"];
+  if (memberAccess === "female") return ["female"];
+  if (memberAccess === "both") return ["male", "female"];
+
+  return resolveAllowedGenders(prisma, roleName);
 }
 
 export function buildGenderAccessWhere(allowedGenders) {

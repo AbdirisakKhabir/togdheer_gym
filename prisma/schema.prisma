@@ -16,6 +16,7 @@ model User {
   username  String    @unique
   password  String
   role      String
+  memberAccess String  @default("both")
   payments  Payment[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

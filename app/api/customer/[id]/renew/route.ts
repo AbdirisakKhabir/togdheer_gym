@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
-import { canAccessGender, resolveAllowedGenders } from "@/app/lib/memberAccess";
+import { canAccessGender, resolveAllowedGendersForUser } from "@/app/lib/memberAccess";
 
 const prisma = new PrismaClient();
 
@@ -23,7 +23,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+    const allowedGenders = await resolveAllowedGendersForUser(prisma, session.user);
     if (Array.isArray(allowedGenders) && allowedGenders.length === 0) {
       return NextResponse.json(
         { error: "No member gender access assigned for this role" },

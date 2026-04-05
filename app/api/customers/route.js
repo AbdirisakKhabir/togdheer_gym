@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth";
-import { buildGenderAccessWhere, resolveAllowedGenders } from "@/app/lib/memberAccess";
+import { buildGenderAccessWhere, resolveAllowedGendersForUser } from "@/app/lib/memberAccess";
 
 const prisma = new PrismaClient();
 
@@ -14,7 +14,7 @@ export async function GET(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const allowedGenders = await resolveAllowedGenders(prisma, session.user.role);
+    const allowedGenders = await resolveAllowedGendersForUser(prisma, session.user);
     const accessWhere = buildGenderAccessWhere(allowedGenders);
     if (accessWhere === null) {
       return NextResponse.json(

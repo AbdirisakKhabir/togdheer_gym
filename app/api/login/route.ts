@@ -45,7 +45,8 @@ export async function POST(req: Request) {
       { 
         userId: user.id, 
         username: user.username,
-        role: user.role 
+        role: user.role,
+        memberAccess: user.memberAccess || "both",
       },
       jwtSecret,
       { expiresIn: "1h" }
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
         id: user.id,
         username: user.username,
         role: user.role,
+        memberAccess: user.memberAccess || "both",
       },
     });
 

@@ -7,7 +7,8 @@ const prisma = new PrismaClient();
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { username, role, password } = body;
+    const { username, role, password, memberAccess } = body;
+    const normalizedMemberAccess = (memberAccess || "both").toString().toLowerCase();
 
     // Validation
     if (!username || !role || !password) {
@@ -20,6 +21,12 @@ export async function POST(request) {
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters long." },
+        { status: 400 }
+      );
+    }
+    if (!["male", "female", "both"].includes(normalizedMemberAccess)) {
+      return NextResponse.json(
+        { error: "Member access must be male, female, or both." },
         { status: 400 }
       );
     }
@@ -45,6 +52,7 @@ export async function POST(request) {
       data: {
         username,
         role,
+        memberAccess: normalizedMemberAccess,
         password: hashedPassword,
       },
     });
