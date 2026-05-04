@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import Swal from 'sweetalert2';
 import { useSession } from 'next-auth/react';
 import {
   Boxes,
+  Box,
   Plus,
   Loader2,
   Pencil,
@@ -15,7 +16,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
+  User,
+  CalendarDays,
 } from 'lucide-react';
+import { assignmentCoversPaymentDate } from '@/app/lib/cabinetAssignmentEligible';
 
 type CabinetRow = {
   id: number;
@@ -62,6 +67,8 @@ export default function CabinetManagement() {
     cabinetCode: string;
     monthlyPrice: number;
     customerName: string;
+    rentalStartDate: string;
+    rentalEndDate: string | null;
   } | null>(null);
   const [listAssignment, setListAssignment] = useState<{
     id: number;
@@ -282,7 +289,7 @@ export default function CabinetManagement() {
   const handleRelease = async (assignmentId: number) => {
     const r = await Swal.fire({
       title: 'End this rental?',
-      text: 'The cabinet will be available for a new member after today.',
+      text: 'After this date the cabinet is available again and no further cabinet payments can be recorded for that rental.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'End rental',
@@ -316,6 +323,22 @@ export default function CabinetManagement() {
     const discount = parseFloat(String(fd.get('discount') || '0'));
     const balance = parseFloat(String(fd.get('balance') || '0'));
     const dateStr = String(fd.get('date') || '');
+    const paymentDate = dateStr ? new Date(dateStr) : new Date();
+    if (
+      payAssignment &&
+      !assignmentCoversPaymentDate(
+        { startDate: payAssignment.rentalStartDate, endDate: payAssignment.rentalEndDate },
+        paymentDate
+      )
+    ) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Invalid date',
+        text: 'Pick a payment date that falls inside this rental period. Ended rentals cannot receive new cabinet payments.',
+        confirmButtonColor: '#2563eb',
+      });
+      return;
+    }
     try {
       const res = await fetch('/api/cabinet-payments', {
         method: 'POST',
@@ -348,6 +371,33 @@ export default function CabinetManagement() {
     }
   };
 
+  const handleDeleteCabinetPayment = async (paymentId: number) => {
+    const r = await Swal.fire({
+      title: 'Delete this payment?',
+      text: 'This permanently removes this cabinet fee entry.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+    });
+    if (!r.isConfirmed) return;
+    try {
+      const res = await fetch(`/api/cabinet-payments/${paymentId}`, { method: 'DELETE' });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Delete failed');
+      fetchCabinetPayments();
+      fetchCabinets();
+      setAssignmentPayments((prev) => prev.filter((p) => p.id !== paymentId));
+      Swal.fire({ icon: 'success', title: 'Removed', timer: 1500, showConfirmButton: false });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        text: err instanceof Error ? err.message : 'Error',
+        confirmButtonColor: '#2563eb',
+      });
+    }
+  };
+
   const openAssignmentPayments = async (assignmentId: number, label: string) => {
     setListAssignment({ id: assignmentId, label });
     try {
@@ -366,16 +416,6 @@ export default function CabinetManagement() {
   const paySliceStart = (payPage - 1) * itemsPerPage;
   const payTotalPages = Math.max(1, Math.ceil(payments.length / itemsPerPage));
   const paySlice = payments.slice(paySliceStart, paySliceStart + itemsPerPage);
-
-  /** Lockers per horizontal shelf row (visual shelves). */
-  const CABINETS_PER_SHELF = 6;
-  const cabinetShelves = useMemo(() => {
-    const rows: CabinetRow[][] = [];
-    for (let i = 0; i < cabinets.length; i += CABINETS_PER_SHELF) {
-      rows.push(cabinets.slice(i, i + CABINETS_PER_SHELF));
-    }
-    return rows;
-  }, [cabinets]);
 
   return (
     <div className="space-y-6">
@@ -425,176 +465,140 @@ export default function CabinetManagement() {
               <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
             </div>
           ) : (
-            <div className="rounded-2xl border-2 border-stone-400/35 bg-gradient-to-b from-stone-100 via-stone-200 to-stone-300 p-4 sm:p-6 md:p-8 shadow-[inset_0_2px_12px_rgba(255,255,255,0.35)]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
               {cabinets.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-stone-400/50 bg-white/60 p-12 text-center text-stone-500">
-                  <Boxes className="w-14 h-14 mx-auto mb-3 text-stone-400" />
-                  <p className="font-medium text-stone-700">No cabinets yet</p>
-                  <p className="text-sm mt-1">Add a box to start assigning members.</p>
+                <div className="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center text-gray-500">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                    <Boxes className="w-8 h-8" strokeWidth={1.75} />
+                  </div>
+                  <p className="font-medium text-gray-800">No cabinets yet</p>
+                  <p className="mt-1 text-sm">Use “Add cabinet” to create the first unit.</p>
                 </div>
               ) : (
-                <div className="space-y-10 md:space-y-12">
-                  {cabinetShelves.map((row, shelfIndex) => (
-                    <div key={shelfIndex} className="relative">
-                      {/* Wall pins / rail */}
-                      <div
-                        className="pointer-events-none absolute -left-1 top-0 bottom-8 w-1 rounded-full bg-gradient-to-b from-stone-400 to-stone-500 opacity-60 hidden sm:block"
-                        aria-hidden
-                      />
-                      <div
-                        className="pointer-events-none absolute -right-1 top-0 bottom-8 w-1 rounded-full bg-gradient-to-b from-stone-400 to-stone-500 opacity-60 hidden sm:block"
-                        aria-hidden
-                      />
-
-                      <div className="flex flex-wrap justify-center items-end gap-3 sm:gap-4 px-1 pb-0">
-                        {row.map((c) => {
-                          const occ = c.activeAssignment;
-                          const occupied = Boolean(occ);
-                          return (
-                            <div
-                              key={c.id}
-                              className={`flex w-[140px] sm:w-[152px] flex-col rounded-t-lg border-2 shadow-lg transition-transform duration-200 hover:z-10 hover:-translate-y-0.5 ${
-                                occupied
-                                  ? 'border-amber-900/55 bg-gradient-to-b from-amber-200/95 via-orange-100 to-amber-50 shadow-amber-900/20'
-                                  : 'border-slate-600/50 bg-gradient-to-b from-slate-50 to-emerald-50/90 shadow-slate-900/10'
-                              }`}
-                            >
-                              {/* Locker door detail */}
-                              <div
-                                className={`mx-2 mt-2 h-1 rounded-full ${occupied ? 'bg-orange-400/50' : 'bg-emerald-500/35'}`}
-                              />
-                              <div className="flex flex-1 flex-col px-2.5 pb-2 pt-1.5 min-h-[200px]">
-                                <div className="flex items-start justify-between gap-1">
-                                  <h3 className="text-sm font-bold text-stone-900 leading-tight">
-                                    {c.code}
-                                  </h3>
-                                  <span
-                                    className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-                                      occupied
-                                        ? 'bg-amber-900/80 text-amber-100'
-                                        : 'bg-emerald-700 text-white'
-                                    }`}
-                                  >
-                                    {occupied ? 'Full' : 'Free'}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-stone-600 mt-0.5">
-                                  {formatMoney(c.monthlyPrice)}
-                                  <span className="text-stone-400"> /mo</span>
-                                </p>
-                                {c.notes && (
-                                  <p className="text-[10px] text-stone-500 mt-1 line-clamp-2 leading-snug">
-                                    {c.notes}
-                                  </p>
-                                )}
-
-                                {occ && (
-                                  <div className="mt-2 flex-1 rounded-md border border-amber-900/15 bg-white/55 px-2 py-1.5 text-[11px] leading-snug">
-                                    <p className="font-semibold text-stone-900 truncate" title={occ.customer.name}>
-                                      {occ.customer.name}
-                                    </p>
-                                    <p className="text-stone-500 truncate">{occ.customer.phone || '—'}</p>
-                                    <p className="text-stone-600 mt-1 text-[10px]">
-                                      {formatDate(occ.startDate)}
-                                      {' → '}
-                                      {occ.endDate ? formatDate(occ.endDate) : 'Open'}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Door handle */}
-                                <div className="flex justify-center my-1.5">
-                                  <div
-                                    className={`h-5 w-1.5 rounded-full ${
-                                      occupied ? 'bg-amber-900/40' : 'bg-slate-500/35'
-                                    }`}
-                                  />
-                                </div>
-
-                                <div className="mt-auto flex flex-wrap gap-1 justify-center">
-                                  {!occ ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => setAssignCabinet(c)}
-                                      className="inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-blue-600 text-white text-[10px] font-semibold hover:bg-blue-700 w-full"
-                                    >
-                                      <UserPlus className="w-3.5 h-3.5 shrink-0" />
-                                      Assign
-                                    </button>
-                                  ) : (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setPayAssignment({
-                                            assignmentId: occ.id,
-                                            cabinetCode: c.code,
-                                            monthlyPrice: c.monthlyPrice,
-                                            customerName: occ.customer.name,
-                                          })
-                                        }
-                                        className="inline-flex flex-1 min-w-[56px] items-center justify-center gap-0.5 px-1.5 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-semibold hover:bg-emerald-700"
-                                        title="Record payment"
-                                      >
-                                        <Banknote className="w-3 h-3" />
-                                        Pay
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          openAssignmentPayments(occ.id, `${c.code} · ${occ.customer.name}`)
-                                        }
-                                        className="inline-flex flex-1 min-w-[56px] items-center justify-center gap-0.5 px-1.5 py-1 rounded-md border border-stone-300 bg-white text-stone-800 text-[10px] font-semibold hover:bg-stone-50"
-                                        title="Payment history"
-                                      >
-                                        <List className="w-3 h-3" />
-                                        Log
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRelease(occ.id)}
-                                        className="w-full inline-flex items-center justify-center gap-0.5 px-1.5 py-1 rounded-md border border-red-300 text-red-800 text-[10px] font-semibold hover:bg-red-50"
-                                      >
-                                        End rental
-                                      </button>
-                                    </>
-                                  )}
-                                  <div className="flex w-full gap-1 justify-center">
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditCabinet(c)}
-                                      className="inline-flex flex-1 items-center justify-center p-1.5 rounded-md border border-stone-300 bg-white/80 text-stone-700 hover:bg-white"
-                                      title="Edit cabinet"
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteCabinet(c)}
-                                      className="inline-flex flex-1 items-center justify-center p-1.5 rounded-md border border-red-200 bg-white/80 text-red-600 hover:bg-red-50"
-                                      title="Delete cabinet"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
+                cabinets.map((c) => {
+                  const occ = c.activeAssignment;
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <Box className="h-5 w-5" strokeWidth={2} />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="truncate text-lg font-bold text-gray-900">{c.code}</h3>
+                            <div className="mt-1 flex items-center gap-1.5 text-sm text-gray-600">
+                              <DollarSign className="h-4 w-4 shrink-0 text-gray-400" />
+                              <span>
+                                {formatMoney(c.monthlyPrice)}
+                                <span className="text-gray-400"> / month</span>
+                              </span>
                             </div>
-                          );
-                        })}
+                          </div>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            occ ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {occ ? 'In use' : 'Available'}
+                        </span>
                       </div>
 
-                      {/* Wooden shelf board */}
-                      <div className="relative mx-0 mt-0 px-1">
-                        <div
-                          className="h-5 sm:h-6 rounded-b-md bg-gradient-to-b from-amber-800 via-amber-900 to-amber-950 shadow-[0_6px_12px_-2px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.12)]"
-                        />
-                        <div className="absolute top-0 left-2 right-2 h-px bg-amber-600/50" />
+                      {c.notes && (
+                        <p className="mt-3 line-clamp-2 text-sm text-gray-500">{c.notes}</p>
+                      )}
+
+                      {occ && (
+                        <div className="mt-4 space-y-2 rounded-xl bg-gray-50 p-3 text-sm">
+                          <div className="flex items-center gap-2 text-gray-800">
+                            <User className="h-4 w-4 shrink-0 text-gray-400" />
+                            <span className="truncate font-medium">{occ.customer.name}</span>
+                          </div>
+                          <p className="pl-6 text-xs text-gray-500">{occ.customer.phone || '—'}</p>
+                          <div className="flex items-start gap-2 text-xs text-gray-600">
+                            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                            <span>
+                              {formatDate(occ.startDate)}
+                              {' → '}
+                              {occ.endDate ? formatDate(occ.endDate) : 'No end date'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {!occ ? (
+                          <button
+                            type="button"
+                            onClick={() => setAssignCabinet(c)}
+                            className="inline-flex flex-1 min-w-[100px] items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                            Assign
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPayAssignment({
+                                  assignmentId: occ.id,
+                                  cabinetCode: c.code,
+                                  monthlyPrice: c.monthlyPrice,
+                                  customerName: occ.customer.name,
+                                  rentalStartDate: occ.startDate,
+                                  rentalEndDate: occ.endDate,
+                                })
+                              }
+                              className="inline-flex flex-1 min-w-[88px] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+                            >
+                              <Banknote className="h-4 w-4" />
+                              Payment
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openAssignmentPayments(occ.id, `${c.code} · ${occ.customer.name}`)
+                              }
+                              className="inline-flex flex-1 min-w-[88px] items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                            >
+                              <List className="h-4 w-4" />
+                              Payments
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRelease(occ.id)}
+                              className="w-full inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+                            >
+                              End rental
+                            </button>
+                          </>
+                        )}
+                        <div className="flex w-full gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditCabinet(c)}
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCabinet(c)}
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </button>
+                        </div>
                       </div>
-                      <p className="sr-only">Shelf {shelfIndex + 1}</p>
                     </div>
-                  ))}
-                </div>
+                  );
+                })
               )}
             </div>
           )}
@@ -646,12 +650,15 @@ export default function CabinetManagement() {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden lg:table-cell">
                         By
                       </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {paySlice.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
+                        <td colSpan={7} className="px-4 py-10 text-center text-gray-500">
                           No cabinet payments recorded yet.
                         </td>
                       </tr>
@@ -680,6 +687,17 @@ export default function CabinetManagement() {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">
                             {p.user.username}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCabinetPayment(p.id)}
+                              className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-red-600 hover:bg-red-50"
+                              title="Delete payment"
+                              aria-label="Delete payment"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -886,8 +904,14 @@ export default function CabinetManagement() {
                 <p className="text-sm text-gray-500">
                   {payAssignment.cabinetCode} · {payAssignment.customerName}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Suggested monthly: {formatMoney(payAssignment.monthlyPrice)}
+                <p className="text-xs text-gray-500 mt-1">
+                  Suggested amount: {formatMoney(payAssignment.monthlyPrice)}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Rental: {formatDate(payAssignment.rentalStartDate)}
+                  {' → '}
+                  {payAssignment.rentalEndDate ? formatDate(payAssignment.rentalEndDate) : 'open'}
+                  . Payment date must fall in this range — once the rental has ended, no new cabinet payments can be recorded.
                 </p>
               </div>
               <button
@@ -972,16 +996,27 @@ export default function CabinetManagement() {
                   {assignmentPayments.map((row) => (
                     <li
                       key={row.id}
-                      className="flex justify-between gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm"
                     >
                       <div>
                         <p className="font-semibold text-gray-900">{formatMoney(row.paidAmount)}</p>
                         <p className="text-xs text-gray-500">{formatDate(row.date)}</p>
                         <p className="text-xs text-gray-500">By {row.user.username}</p>
                       </div>
-                      <div className="text-right text-xs text-gray-600">
-                        <p>Disc {formatMoney(row.discount)}</p>
-                        <p>Bal {formatMoney(row.balance)}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right text-xs text-gray-600">
+                          <p>Disc {formatMoney(row.discount)}</p>
+                          <p>Bal {formatMoney(row.balance)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCabinetPayment(row.id)}
+                          className="shrink-0 rounded-lg border border-gray-200 bg-white p-2 text-red-600 hover:bg-red-50"
+                          title="Delete"
+                          aria-label="Delete payment"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </li>
                   ))}

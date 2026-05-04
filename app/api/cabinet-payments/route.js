@@ -6,6 +6,7 @@ import {
   resolveAllowedGendersForUser,
   canAccessGender,
 } from "@/app/lib/memberAccess";
+import { assignmentCoversPaymentDate } from "@/app/lib/cabinetAssignmentEligible";
 
 const prisma = new PrismaClient();
 
@@ -104,6 +105,20 @@ export async function POST(request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const paymentDate = body.date ? new Date(body.date) : new Date();
+    if (Number.isNaN(paymentDate.getTime())) {
+      return NextResponse.json({ error: "Invalid payment date" }, { status: 400 });
+    }
+    if (!assignmentCoversPaymentDate(assignment, paymentDate)) {
+      return NextResponse.json(
+        {
+          error:
+            "This rental has ended — you cannot record a cabinet payment for this period.",
+        },
+        { status: 400 }
+      );
+    }
+
     const payment = await prisma.cabinetPayment.create({
       data: {
         assignmentId,
@@ -111,7 +126,7 @@ export async function POST(request) {
         paidAmount,
         discount: Number.isNaN(discount) ? 0 : discount,
         balance,
-        date: body.date ? new Date(body.date) : new Date(),
+        date: paymentDate,
       },
       include: {
         assignment: {

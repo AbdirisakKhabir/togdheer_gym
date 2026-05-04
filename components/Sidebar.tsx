@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Settings,
   Boxes,
+  ClipboardList,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -26,6 +27,7 @@ interface SidebarProps {
   onUsersList: () => void;
   onAddUser: () => void;
   onPaymentsReport: () => void;
+  onCabinetReport: () => void;
   onExpenseReport: () => void;
   onIncomeStatement: () => void;
   onAddExpense: () => void;
@@ -45,6 +47,7 @@ export default function Sidebar({
   onUsersList,
   onAddUser,
   onPaymentsReport,
+  onCabinetReport,
   onExpenseReport,
   onIncomeStatement,
   onAddExpense,
@@ -216,6 +219,7 @@ export default function Sidebar({
           {expanded === 'reports' && (
             <div className="pl-4 pb-2 space-y-1">
               {menuItem(onPaymentsReport, <CreditCard className="w-4 h-4 text-blue-300" />, 'Payments Report')}
+              {menuItem(onCabinetReport, <ClipboardList className="w-4 h-4 text-blue-300" />, 'Cabinet Report')}
               {menuItem(onExpenseReport, <Receipt className="w-4 h-4 text-blue-300" />, 'Expense Report')}
               {menuItem(onIncomeStatement, <BarChart3 className="w-4 h-4 text-blue-300" />, 'Income Statement')}
             </div>

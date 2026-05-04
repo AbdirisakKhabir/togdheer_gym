@@ -19,6 +19,7 @@ import CustomerModal from '@/components/AddCustomerModal';
 import AddExpenseModal from '@/components/AddExpenseModal';
 import ExpenseReportModal from '@/components/ExpenseReportModal';
 import IncomeStatementModal from '@/components/IncomeStatementModal';
+import CabinetReportModal from '@/components/CabinetReportModal';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
 import Settings from '@/components/Settings';
@@ -320,6 +321,7 @@ export default function CustomersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
   const [isPaymentsReportModalOpen, setIsPaymentsReportModalOpen] = useState(false);
+  const [isCabinetReportModalOpen, setIsCabinetReportModalOpen] = useState(false);
   const [isCustomersReportModalOpen, setIsCustomersReportModalOpen] = useState(false);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -949,6 +951,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
         onUsersList={() => { setActiveView('users'); setIsSidebarOpen(false); }}
         onAddUser={() => { setIsAddUserModalOpen(true); setIsSidebarOpen(false); }}
         onPaymentsReport={() => { setIsPaymentsReportModalOpen(true); setIsSidebarOpen(false); }}
+        onCabinetReport={() => { setIsCabinetReportModalOpen(true); setIsSidebarOpen(false); }}
         onExpenseReport={() => { setIsExpenseReportModalOpen(true); setIsSidebarOpen(false); }}
         onIncomeStatement={() => { setIsIncomeStatementModalOpen(true); setIsSidebarOpen(false); }}
         onAddExpense={() => { setIsAddExpenseModalOpen(true); setIsSidebarOpen(false); }}
@@ -1411,6 +1414,11 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
           <PaymentsReportModal
             isOpen={isPaymentsReportModalOpen}
             onClose={() => setIsPaymentsReportModalOpen(false)}
+          />
+
+          <CabinetReportModal
+            isOpen={isCabinetReportModalOpen}
+            onClose={() => setIsCabinetReportModalOpen(false)}
           />
 
           <AddUserModal
