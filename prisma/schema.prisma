@@ -18,6 +18,7 @@ model User {
   role      String
   memberAccess String  @default("both")
   payments  Payment[]
+  cabinetPayments CabinetPayment[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -72,8 +73,53 @@ model Customer {
   standardWeight Float?
   shift         String?
   payments      Payment[]
+  cabinetAssignments CabinetAssignment[]
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+// =========================
+// Cabinet (locker box) rentals
+// =========================
+model Cabinet {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique
+  monthlyPrice Float
+  notes        String?
+  assignments  CabinetAssignment[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CabinetAssignment {
+  id          Int      @id @default(autoincrement())
+  cabinetId   Int
+  customerId  Int
+  startDate   DateTime
+  endDate     DateTime?
+  cabinet     Cabinet  @relation(fields: [cabinetId], references: [id], onDelete: Cascade)
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  payments    CabinetPayment[]
+  createdAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cabinetId])
+  @@index([customerId])
+}
+
+model CabinetPayment {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int
+  userId       Int
+  paidAmount   Float
+  discount     Float    @default(0)
+  balance      Float
+  date         DateTime
+  assignment   CabinetAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@index([date])
 }
 
 // =========================

@@ -13,6 +13,7 @@ import {
   UserCircle,
   LayoutDashboard,
   Settings,
+  Boxes,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -20,6 +21,7 @@ interface SidebarProps {
   onDashboard: () => void;
   onMembersList: () => void;
   onAddMember: () => void;
+  onCabinets: () => void;
   onPaymentsList: () => void;
   onUsersList: () => void;
   onAddUser: () => void;
@@ -38,6 +40,7 @@ export default function Sidebar({
   onDashboard,
   onMembersList,
   onAddMember,
+  onCabinets,
   onPaymentsList,
   onUsersList,
   onAddUser,
@@ -142,6 +145,7 @@ export default function Sidebar({
             <div className="pl-4 pb-2 space-y-1">
               {menuItem(onMembersList, <Users className="w-4 h-4 text-blue-300" />, 'Members List')}
               {menuItem(onAddMember, <UserPlus className="w-4 h-4 text-blue-300" />, 'Add New Member')}
+              {menuItem(onCabinets, <Boxes className="w-4 h-4 text-blue-300" />, 'Cabinet Management')}
             </div>
           )}
         </div>

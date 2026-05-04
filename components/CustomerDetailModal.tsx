@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 interface CustomerDetailModalProps {
   isOpen: boolean;
   onEdit: (customer: Customer) => void;
+  onDelete?: (customer: Customer) => void;
   onClose: () => void;
   customer: Customer | null;
 }
@@ -23,7 +24,8 @@ export default function CustomerDetailModal({
   isOpen, 
   onClose, 
   customer, 
-  onEdit 
+  onEdit,
+  onDelete,
 }: CustomerDetailModalProps) {
   const [customerPayments, setCustomerPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
@@ -353,6 +355,17 @@ export default function CustomerDetailModal({
 
         {/* Footer Actions */}
         <div className="border-t border-gray-200 p-4 sm:p-6 bg-gray-50">
+          {onDelete && (
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => onDelete(customer)}
+                className="w-full px-4 py-3 border-2 border-red-200 text-red-700 bg-red-50 rounded-xl hover:bg-red-100 transition-all duration-200 font-semibold text-sm sm:text-base"
+              >
+                Delete member
+              </button>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button
               onClick={onClose}

@@ -30,6 +30,8 @@ export async function GET(request) {
     const shift = searchParams.get("shift");
     const type = searchParams.get("type");
     const expireDate = searchParams.get("expireDate");
+    /** When "1", skip the default "active members only" filter (e.g. locker / cabinet pickers). */
+    const bypassDefault = searchParams.get("bypassDefault") === "1";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "200");
     const skip = (page - 1) * limit;
@@ -97,7 +99,11 @@ export async function GET(request) {
     // Handle regular filtering (when no type parameter)
     else {
       // Apply default filter ONLY when no search and no specific status
-      if (!search && (!status || status === "all")) {
+      if (
+        !bypassDefault &&
+        !search &&
+        (!status || status === "all")
+      ) {
         // DEFAULT: Show only active members (isActive = true AND expireDate >= today)
         where.isActive = true;
         where.expireDate = { gte: today };

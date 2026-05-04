@@ -22,6 +22,7 @@ import IncomeStatementModal from '@/components/IncomeStatementModal';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
 import Settings from '@/components/Settings';
+import CabinetManagement from '@/components/CabinetManagement';
 
 // Payment types
 interface Payment {
@@ -328,7 +329,7 @@ export default function CustomersPage() {
   const [isExpenseReportModalOpen, setIsExpenseReportModalOpen] = useState(false);
   const [isIncomeStatementModalOpen, setIsIncomeStatementModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'dashboard' | 'members' | 'payments' | 'users' | 'expenses' | 'settings'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'members' | 'payments' | 'users' | 'expenses' | 'settings' | 'cabinets'>('dashboard');
   // Add this state to track which stat is active
  
   // Add this state to track which stat is activ
@@ -358,6 +359,77 @@ export default function CustomersPage() {
     setIsCustomerModalOpen(true);
   };
 
+  const handleDeleteCustomer = async (customer: Customer) => {
+    const result = await Swal.fire({
+      title: 'Delete this member?',
+      text: `This will permanently remove ${customer.name} and their payment history from the system. This cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      Swal.fire({
+        title: 'Deleting…',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      const response = await fetch(`/api/customer/${customer.id}`, {
+        method: 'DELETE',
+      });
+
+      Swal.close();
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(
+          typeof errBody.error === 'string' ? errBody.error : 'Failed to delete member'
+        );
+      }
+
+      setIsDetailModalOpen(false);
+      setSelectedCustomer(null);
+      setSelectedCustomers((prev) => prev.filter((id) => id !== customer.id));
+      setEditingCustomer((prev) => (prev?.id === customer.id ? null : prev));
+
+      refreshStats();
+
+      const filters = getApiFilters();
+      const remainingOnPage = customers.filter((c) => c.id !== customer.id);
+      if (remainingOnPage.length === 0 && currentPage > 1) {
+        setCurrentPage((p) => Math.max(1, p - 1));
+      } else {
+        fetchCustomers(currentPage, filters);
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Member deleted',
+        text: `${customer.name} has been removed.`,
+        timer: 2200,
+        showConfirmButton: false,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+      console.error('Delete member error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Delete failed',
+        text: error instanceof Error ? error.message : 'Could not delete this member. Please try again.',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#2563eb',
+      });
+    }
+  };
 
   
   const handleUpdateCustomer = async (customerId: string, updatedData: Partial<Customer>) => {
@@ -872,6 +944,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
         onDashboard={() => { setActiveView('dashboard'); setIsSidebarOpen(false); }}
         onMembersList={() => { setActiveView('members'); setIsSidebarOpen(false); }}
         onAddMember={() => { setIsCustomerModalOpen(true); setIsSidebarOpen(false); }}
+        onCabinets={() => { setActiveView('cabinets'); setIsSidebarOpen(false); }}
         onPaymentsList={() => { setActiveView('payments'); setIsSidebarOpen(false); }}
         onUsersList={() => { setActiveView('users'); setIsSidebarOpen(false); }}
         onAddUser={() => { setIsAddUserModalOpen(true); setIsSidebarOpen(false); }}
@@ -916,6 +989,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
               {activeView === 'users' && 'Users'}
               {activeView === 'expenses' && 'Expenses'}
               {activeView === 'settings' && 'Settings'}
+              {activeView === 'cabinets' && 'Cabinet management'}
             </h1>
             <p className="text-gray-600 mt-1 text-sm sm:text-base">
               {activeView === 'dashboard' && 'Overview of your gym performance'}
@@ -924,6 +998,8 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
               {activeView === 'users' && 'Manage system users and roles'}
               {activeView === 'expenses' && 'View and manage all expenses'}
               {activeView === 'settings' && 'Roles, permissions, and user access'}
+              {activeView === 'cabinets' &&
+                'Locker boxes, rentals, monthly fees, and cabinet-only payments'}
             </p>
           </div>
 
@@ -940,6 +1016,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
           {activeView === 'users' && <UsersTable onAddUser={() => setIsAddUserModalOpen(true)} />}
           {activeView === 'expenses' && <ExpensesTable onAddExpense={() => setIsAddExpenseModalOpen(true)} />}
           {activeView === 'settings' && <Settings />}
+          {activeView === 'cabinets' && <CabinetManagement />}
           {activeView === 'members' && (
             <>
 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
@@ -1308,6 +1385,7 @@ const handleAddCustomer = (newCustomer: Omit<Customer, 'id' | 'createdAt' | 'upd
             onClose={() => setIsDetailModalOpen(false)}
             customer={selectedCustomer}
             onEdit={handleEditCustomer}
+            onDelete={handleDeleteCustomer}
           />
 
           <CustomerModal
