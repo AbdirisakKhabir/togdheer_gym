@@ -288,24 +288,30 @@ export default function CabinetManagement() {
 
   const handleRelease = async (assignmentId: number) => {
     const r = await Swal.fire({
-      title: 'End this rental?',
-      text: 'After this date the cabinet is available again and no further cabinet payments can be recorded for that rental.',
-      icon: 'question',
+      title: 'Remove member from cabinet?',
+      text: 'This deletes the assignment and frees the cabinet. All cabinet fee payments recorded for this rental will be removed too.',
+      icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'End rental',
+      confirmButtonText: 'Yes, remove',
+      cancelButtonText: 'Cancel',
       confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
     try {
       const res = await fetch(`/api/cabinet-assignments/${assignmentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        method: 'DELETE',
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || 'Failed to end assignment');
+      if (!res.ok) throw new Error(body.error || 'Could not remove assignment');
       fetchCabinets();
-      Swal.fire({ icon: 'success', title: 'Rental ended', timer: 1800, showConfirmButton: false });
+      if (tab === 'payments') fetchCabinetPayments();
+      setListAssignment((prev) => (prev?.id === assignmentId ? null : prev));
+      Swal.fire({
+        icon: 'success',
+        title: 'Assignment removed',
+        timer: 1800,
+        showConfirmButton: false,
+      });
     } catch (err) {
       Swal.fire({
         icon: 'error',
@@ -573,7 +579,7 @@ export default function CabinetManagement() {
                               onClick={() => handleRelease(occ.id)}
                               className="w-full inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
                             >
-                              End rental
+                              Remove from cabinet
                             </button>
                           </>
                         )}

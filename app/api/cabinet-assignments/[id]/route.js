@@ -9,8 +9,10 @@ import {
 
 const prisma = new PrismaClient();
 
-/** End a cabinet assignment (frees the box after this date). */
-export async function PATCH(request, { params }) {
+/**
+ * Remove member from cabinet: deletes the assignment (and cascading cabinet payments for that rental).
+ */
+export async function DELETE(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.role) {
@@ -21,15 +23,6 @@ export async function PATCH(request, { params }) {
     const assignmentId = parseInt(id, 10);
     if (Number.isNaN(assignmentId)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-    }
-
-    const body = await request.json().catch(() => ({}));
-    const endDate = body.endDate
-      ? new Date(body.endDate)
-      : new Date();
-
-    if (Number.isNaN(endDate.getTime())) {
-      return NextResponse.json({ error: "Invalid end date" }, { status: 400 });
     }
 
     const allowedGenders = await resolveAllowedGendersForUser(prisma, session.user);
@@ -52,33 +45,15 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const start = new Date(existing.startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(0, 0, 0, 0);
-    if (end < start) {
-      return NextResponse.json(
-        { error: "End date cannot be before the assignment start date" },
-        { status: 400 }
-      );
-    }
-
-    const updated = await prisma.cabinetAssignment.update({
+    await prisma.cabinetAssignment.delete({
       where: { id: assignmentId },
-      data: { endDate },
-      include: {
-        cabinet: true,
-        customer: {
-          select: { id: true, name: true, phone: true, gender: true },
-        },
-      },
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json({ message: "Assignment removed" });
   } catch (error) {
-    console.error("PATCH cabinet-assignment:", error);
+    console.error("DELETE cabinet-assignment:", error);
     return NextResponse.json(
-      { error: "Failed to update assignment" },
+      { error: "Failed to remove assignment" },
       { status: 500 }
     );
   }
